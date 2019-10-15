@@ -1,10 +1,17 @@
 import numpy as np
 import cv2
 import cv2 as cv
+import math
 img = 255-cv2.imread('TRACK1.png',0)
 from matplotlib import pyplot as plt
 
-
+def GetAngle (p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    m1 = x1/max(1,y1)
+    m2 = x2/y2
+    tnAngle = (m1-m2)/(1+(m1*m2))
+    return math.degrees(math.atan(tnAngle))
 def lineFromPoints(P,Q): 
   
     a = Q[1] - P[1] 
@@ -58,10 +65,17 @@ x,y = img.shape
 
 target = (int(x*(1/2)),int(y*(3/4)))
 imaginary = lineFromPoints([0,int(y*(3/4))],[x,int(y*(3/4))])
-p = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
-print(p)
+real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
+print(real)
+bot = (int(x*(1/2)),int(y*(3.3/4)))
+line1 = lineFromPoints([int(x*(1/2)),int(y*(3/4))],[int(x*(1/2)),int(y*(3.3/4))])
+line2 = lineFromPoints([int(real[0]),int(real[1])],[int(x*(1/2)),int(y*(3.3/4))])
+print(GetAngle((line1[0],line1[1]),(line2[0],line2[1])))
+cv2.line(img,(int(real[0]),int(real[1])),(int(x*(1/2)),int(y*(3.3/4))),(255,255,255),2)
+cv2.line(img,bot,target,(255,255,255),2)
+img = cv2.circle(img, bot , 4, (255,255,255), 10)
 img = cv2.circle(img, target , 2, (255,255,255), 2)
-img = cv2.circle(img, (int(p[0]),int(p[1])) , 2, (255,255,255), 10) 
+img = cv2.circle(img, (int(real[0]),int(real[1])) , 2, (255,255,255), 10) 
 cv2.line(img,(0,int(y*(3/4))),(x,int(y*(3/4))),(255,255,255),2)
 cv2.imshow('window',img)
 #cv2.imwrite('houghlines5.jpg',skel)
