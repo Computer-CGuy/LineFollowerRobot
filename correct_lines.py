@@ -4,12 +4,13 @@ import cv2 as cv
 import math
 img = 255-cv2.imread('TRACK1.png',0)
 from matplotlib import pyplot as plt
-
+def w(n, d):
+    return n / d if d else 0
 def GetAngle (p1, p2):
     x1, y1 = p1
     x2, y2 = p2
-    m1 = x1/max(1,y1)
-    m2 = x2/y2
+    m1 = w(x1,y1)
+    m2 = w(x2,y2)
     tnAngle = (m1-m2)/(1+(m1*m2))
     return math.degrees(math.atan(tnAngle))
 def lineFromPoints(P,Q): 
@@ -66,11 +67,14 @@ x,y = img.shape
 target = (int(x*(1/2)),int(y*(3/4)))
 imaginary = lineFromPoints([0,int(y*(3/4))],[x,int(y*(3/4))])
 real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
-print(real)
+print(real) 
 bot = (int(x*(1/2)),int(y*(3.3/4)))
 line1 = lineFromPoints([int(x*(1/2)),int(y*(3/4))],[int(x*(1/2)),int(y*(3.3/4))])
 line2 = lineFromPoints([int(real[0]),int(real[1])],[int(x*(1/2)),int(y*(3.3/4))])
-print(GetAngle((line1[0],line1[1]),(line2[0],line2[1])))
+thetha1=(GetAngle((line1[0],line1[1]),(line2[0],line2[1])))
+thetha2=180-(GetAngle((follower[0],follower[1]),(imaginary[0],imaginary[1])))
+thetha = ((90+thetha1)/90)*thetha2
+print(thetha)
 cv2.line(img,(int(real[0]),int(real[1])),(int(x*(1/2)),int(y*(3.3/4))),(255,255,255),2)
 cv2.line(img,bot,target,(255,255,255),2)
 img = cv2.circle(img, bot , 4, (255,255,255), 10)
