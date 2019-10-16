@@ -4,16 +4,31 @@ import cv2 as cv
 import math
 import requests
 import time
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
+def decode(thetha1,thetha2):
+    #thetha= thetha2
+    thetha = thetha1 + ((90-abs(thetha1))/90)*thetha2
+    #thetha = 180+((thetha1-90)/90)*thetha2
+    return thetha
 def w(n, d):
     return n / d if d else 0
-def GetAngle (p1, p2):
+def GetAngle (p1, p2,state):
+    #state=0
     x1, y1 = p1
     x2, y2 = p2
     m1 = w(x1,y1)
     m2 = w(x2,y2)
-    tnAngle = (m1-m2)/(1+(m1*m2))
-    return math.degrees(math.atan(tnAngle))
+    tnAngle = abs((m1-m2)/(1+(m1*m2)))
+    tnAngle = math.degrees(math.atan(tnAngle))
+    tnAngle=90-tnAngle
+    #print(str(m1)+" "+str(m2))
+    if(state==2):
+        if(m1<0):
+            tnAngle*=-1
+    if(state==1):
+        if(m2<0):
+            tnAngle*=-1
+    return tnAngle
 def lineFromPoints(P,Q): 
       
     a = Q[1] - P[1] 
@@ -29,7 +44,7 @@ while True:
     #img_arr = np.array(bytearray(urllib.request.urlopen(URL).read()),dtype=np.uint8)
     img = cv2.imdecode(img_arr,-1)
     
-    #img = cv2.inRange(img, (0,0,0), (60,60,60))	
+    #img = cv2.inRange(img, (255,255,255), (60,60,60))	
     #cv2.imshow("A",img)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     #cv2.waitKey(10)
@@ -37,16 +52,19 @@ while True:
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
     dim = (width, height)
+
     # resize image
     img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+    cv2.imshow("Camera",img)
+    cv2.waitKey(1)
     ret,img = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
     #blur = cv2.GaussianBlur(img,(5,5),0)
     #ret3,th3 = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
     #cv2.imshow("TH3",i
     img = 255-img
-    cv2.imshow("Camera",img)
-    cv2.waitKey(10)
+    
+    #cv2.waitKey(10)
     #img = 255-cv2.imread('TRACK1.png',0)
     
     
@@ -93,31 +111,43 @@ while True:
         follower = lineFromPoints([x1,y1],[x2,y2])
         break
     x,y = img.shape
-
+    y -= 200
     target = (int(x*(1/2)),int(y*(3/4)))
     imaginary = lineFromPoints([0,int(y*(3/4))],[x,int(y*(3/4))])
-    real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
-    #print(real) 
-    bot = (int(x*(1/2)),int(y*(3.3/4)))
-    line1 = lineFromPoints([int(x*(1/2)),int(y*(3/4))],[int(x*(1/2)),int(y*(3.3/4))])
-    line2 = lineFromPoints([int(real[0]),int(real[1])],[int(x*(1/2)),int(y*(3.3/4))])
-    thetha1=(GetAngle((line1[0],line1[1]),(line2[0],line2[1])))
-    thetha2=180-(GetAngle((follower[0],follower[1]),(imaginary[0],imaginary[1])))
+    try:
+        real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
+        #print(real) 
+        bot = (int(x*(1/2)),int(y*(3.3/4)))
+        line1 = lineFromPoints([int(x*(1/2)),int(y*(3/4))],[int(x*(1/2)),int(y*(3.3/4))])
+        line2 = lineFromPoints([int(real[0]),int(real[1])],[int(x*(1/2)),int(y*(3.3/4))])
+        thetha1=(GetAngle((line1[0],line1[1]),(line2[0],line2[1]),1))
+        thetha2=(GetAngle((follower[0],follower[1]),(imaginary[0],imaginary[1]),2))
+        
+        
+        #if(thetha2>90):
+        #   thetha = (((thetha1+90)/90)*thetha2)-180
+           #thetha*=-1
+        thetha = decode(thetha1,thetha2)
+        print(thetha1)
+        
+        cv2.line(img,(int(real[0]),int(real[1])),(int(x*(1/2)),int(y*(3.3/4))),(255,255,255),2)
+        cv2.line(img,bot,target,(255,255,255),2)
+        img = cv2.circle(img, bot , 4, (255,255,255), 10)
+        img = cv2.circle(img, target , 2, (255,255,255), 2)
+        img = cv2.circle(img, (int(real[0]),int(real[1])) , 2, (255,255,255), 10) 
+        cv2.line(img,(0,int(y*(3/4))),(x,int(y*(3/4))),(255,255,255),2)
+        scale_percent = 50 # percent of original size
+        width = int(img.shape[1] * scale_percent / 100)
+        height = int(img.shape[0] * scale_percent / 100)
+        dim = (width, height)
+        
+        # resize image
+        img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+        cv2.imshow('window',img)
+    except:
+        print("Error")
+        pass
     
-    thetha = 180+((thetha1-90)/90)*thetha2
-    #if(thetha2>90):
-    #   thetha = (((thetha1+90)/90)*thetha2)-180
-       #thetha*=-1
-    cv2.imshow("lasr",img)
-    print(thetha)
-    
-    cv2.line(img,(int(real[0]),int(real[1])),(int(x*(1/2)),int(y*(3.3/4))),(255,255,255),2)
-    cv2.line(img,bot,target,(255,255,255),2)
-    img = cv2.circle(img, bot , 4, (255,255,255), 10)
-    img = cv2.circle(img, target , 2, (255,255,255), 2)
-    img = cv2.circle(img, (int(real[0]),int(real[1])) , 2, (255,255,255), 10) 
-    cv2.line(img,(0,int(y*(3/4))),(x,int(y*(3/4))),(255,255,255),2)
-    cv2.imshow('window',img)
     #cv2.imwrite('houghlines5.jpg',skel)
 
     #cv2.imshow('window',skel)
