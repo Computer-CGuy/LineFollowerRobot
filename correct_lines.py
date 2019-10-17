@@ -5,6 +5,25 @@ import math
 import requests
 import time
 #from matplotlib import pyplot as plt
+def calc_c(theta):
+
+    # theta = l/r
+    r = 16 #cm
+    # 3.5 cm Radius of whell
+    length = math.radians(theta)*r
+    return (length/2*math.pi*(3.5))
+def power(theta):
+
+    l = calc_c(theta)
+    print(l)
+    leftMotor = 255
+    rightMotor = 255
+    if(l>=0):
+        leftMotor = (l-1)*255
+    else:
+        l = l*-1
+        rightMotor = (1-l)*255
+    return [leftMotor,rightMotor]
 def roi(img, vertices):
     #blank mask:
     #print(vertices)
@@ -61,7 +80,7 @@ while True:
     #img = cv2.inRange(img, (255,255,255), (60,60,60))
     #cv2.imshow("A",img)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    #cv2.waitKey(10)
+    #cv2.waitKey(10)"""
     scale_percent = 50 # percent of original size
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
@@ -71,8 +90,8 @@ while True:
     img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
     pts = np.array([[0,img.shape[1]],[0,img.shape[1]*1/5],[img.shape[0]*1/5,img.shape[1]*1/10],[img.shape[0]*4/5,img.shape[1]*1/10],[img.shape[0],img.shape[1]*1/4],[img.shape[0],img.shape[1]]])
     img = roi(img,np.int32([pts]))
-    cv2.imshow("Camera",img)
-    cv2.waitKey(1)
+    #cv2.imshow("Camera",img)
+    #cv2.waitKey(1)
     ret,img = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
     #blur = cv2.GaussianBlur(img,(5,5),0)
     #ret3,th3 = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
@@ -107,14 +126,14 @@ while True:
         #cv2.waitKey(1)
         if zeros==size:
             done = True
-    cv2.imshow('Connt',skel)
-    cv2.waitKey(10)
+    #cv2.imshow('Connt',skel)
+    #cv2.waitKey(10)
     skela = skel.copy()
     edges = cv2.Canny(skela,50,150,apertureSize = 3)
     #cv2.imshow("edge",edges)
     lines = cv2.HoughLines(edges,1,np.pi/180,80)
+    #cv2.imshow("LINES_E",edges)
 
-    
     for rho,theta in lines[len(lines)-1]:
         a = np.cos(theta)
         b = np.sin(theta)
@@ -128,15 +147,20 @@ while True:
         cv2.line(img,(x1,y1),(x2,y2),(222,0,255),3)
         follower = lineFromPoints([x1,y1],[x2,y2])
         break
-        
+
     #cv2.imshow("LINES",img)
-    #cv2.waitKey(3000)
+    cv2.waitKey(10)
     x,y = img.shape
     y -= 200
-    
-    target = (int(x*(1/2)),int(y*(3/4)))
 
     imaginary = lineFromPoints([0,int(y*(3/4))],[x,int(y*(3/4))])
+    if(n==0):
+        loca = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
+        loc = loca[0]
+        n+=1
+    target = (int(loc),int(y*(3/4)))
+
+
 
     real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
 
@@ -145,27 +169,31 @@ while True:
 
     real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
     #print(real)
-    bot = (int(x*(1/2)),int(y*(3.3/4)))
-    line1 = lineFromPoints([int(x*(1/2)),int(y*(3/4))],[int(x*(1/2)),int(y*(3.3/4))])
-    line2 = lineFromPoints([int(real[0]),int(real[1])],[int(x*(1/2)),int(y*(3.3/4))])
+    bot = (int(loc),int(y*(3.3/4)))
+    line1 = lineFromPoints([int(loc),int(y*(3/4))],[int(loc),int(y*(3.3/4))])
+    line2 = lineFromPoints([int(real[0]),int(real[1])],[int(loc),int(y*(3.3/4))])
     thetha1=(GetAngle((line1[0],line1[1]),(line2[0],line2[1]),1))
     thetha2=(GetAngle((follower[0],follower[1]),(imaginary[0],imaginary[1]),2))
-
+    if(n==0):
+        sub = thetha2
 
     #if(thetha2>90):
     #   thetha = (((thetha1+90)/90)*thetha2)-180
        #thetha*=-1
-    thetha = decode(thetha1,thetha2)
-    print(thetha1)
+    if(thetha1==90):
+        thetha1=0
 
-    cv2.line(img,(int(real[0]),int(real[1])),(int(x*(1/2)),int(y*(3.3/4))),(255,255,255),2)
+    thetha = decode(thetha1,thetha2)
+    print(thetha)
+    print(power(thetha))
+    cv2.line(img,(int(real[0]),int(real[1])),(int(loc),int(y*(3.3/4))),(255,255,255),2)
     cv2.line(img,bot,target,(255,255,255),2)
     img = cv2.circle(img, bot , 4, (255,255,255), 10)
     img = cv2.circle(img, target , 2, (255,255,255), 2)
     img = cv2.circle(img, (int(real[0]),int(real[1])) , 2, (255,255,255), 10)
     #cv2.imwrite('houghlines5.jpg',skel)
     cv2.line(img,(0,int(y*(3/4))),(x,int(y*(3/4))),(255,255,255),2)
-    scale_percent = 50 # percent of original size
+    scale_percent = 10 # percent of original size
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
     dim = (width, height)
@@ -175,6 +203,8 @@ while True:
     cv2.imshow('window',img)
 
 
+
+    #print(type(exception).__name__)
     pass
 
     #cv2.imshow('window',skel)
