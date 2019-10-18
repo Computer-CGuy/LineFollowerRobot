@@ -14,16 +14,18 @@ def calc_c(theta):
     return (length/2*math.pi*(3.5))
 def power(theta):
 
-    l = calc_c(theta)
-    print(l)
-    leftMotor = 255
-    rightMotor = 255
-    if(l>=0):
-        leftMotor = (l-1)*255
+    n = theta/90
+    #ans = 100/n
+    ans = n
+    #print(ans)
+    if(theta>=0):
+        rm = 100-ans
+        lm = 100
     else:
-        l = l*-1
-        rightMotor = (1-l)*255
-    return [leftMotor,rightMotor]
+        ans*=-1
+        lm = 100-ans
+        rm = 100
+    return lm,rm
 def roi(img, vertices):
     #blank mask:
     #print(vertices)
@@ -152,59 +154,61 @@ while True:
     cv2.waitKey(10)
     x,y = img.shape
     y -= 200
-
-    imaginary = lineFromPoints([0,int(y*(3/4))],[x,int(y*(3/4))])
-    if(n==0):
-        loca = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
-        loc = loca[0]
-        n+=1
-    target = (int(loc),int(y*(3/4)))
-
-
-
-    real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
-
-    #print(real)
-
-
-    real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
-    #print(real)
-    bot = (int(loc),int(y*(3.3/4)))
-    line1 = lineFromPoints([int(loc),int(y*(3/4))],[int(loc),int(y*(3.3/4))])
-    line2 = lineFromPoints([int(real[0]),int(real[1])],[int(loc),int(y*(3.3/4))])
-    thetha1=(GetAngle((line1[0],line1[1]),(line2[0],line2[1]),1))
-    thetha2=(GetAngle((follower[0],follower[1]),(imaginary[0],imaginary[1]),2))
-    if(n==0):
-        sub = thetha2
-
-    #if(thetha2>90):
-    #   thetha = (((thetha1+90)/90)*thetha2)-180
-       #thetha*=-1
-    if(thetha1==90):
-        thetha1=0
-
-    thetha = decode(thetha1,thetha2)
-    print(thetha)
-    print(power(thetha))
-    cv2.line(img,(int(real[0]),int(real[1])),(int(loc),int(y*(3.3/4))),(255,255,255),2)
-    cv2.line(img,bot,target,(255,255,255),2)
-    img = cv2.circle(img, bot , 4, (255,255,255), 10)
-    img = cv2.circle(img, target , 2, (255,255,255), 2)
-    img = cv2.circle(img, (int(real[0]),int(real[1])) , 2, (255,255,255), 10)
-    #cv2.imwrite('houghlines5.jpg',skel)
-    cv2.line(img,(0,int(y*(3/4))),(x,int(y*(3/4))),(255,255,255),2)
-    scale_percent = 10 # percent of original size
-    width = int(img.shape[1] * scale_percent / 100)
-    height = int(img.shape[0] * scale_percent / 100)
-    dim = (width, height)
-
-    # resize image
-    img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
-    cv2.imshow('window',img)
+    try:
+        imaginary = lineFromPoints([0,int(y*(3/4))],[x,int(y*(3/4))])
+        if(n==0):
+            loca = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
+            loc = loca[0]
+            n+=1
+        target = (int(loc),int(y*(3/4)))
 
 
 
-    #print(type(exception).__name__)
-    pass
+        real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
+
+        #print(real)
+
+
+        real = np.linalg.solve([[follower[0],follower[1]], [imaginary[0],imaginary[1]]],[follower[2],imaginary[2]])
+        #print(real)
+        bot = (int(loc),int(y*(3.3/4)))
+        line1 = lineFromPoints([int(loc),int(y*(3/4))],[int(loc),int(y*(3.3/4))])
+        line2 = lineFromPoints([int(real[0]),int(real[1])],[int(loc),int(y*(3.3/4))])
+        thetha1=(GetAngle((line1[0],line1[1]),(line2[0],line2[1]),1))
+        thetha2=(GetAngle((follower[0],follower[1]),(imaginary[0],imaginary[1]),2))
+        if(n==0):
+            sub = thetha2
+
+        #if(thetha2>90):
+        #   thetha = (((thetha1+90)/90)*thetha2)-180
+           #thetha*=-1
+        if(thetha1==90):
+            thetha1=0
+
+        thetha = decode(thetha1,thetha2)
+        #print(thetha)
+        print(power(thetha))
+        """
+        cv2.line(img,(int(real[0]),int(real[1])),(int(loc),int(y*(3.3/4))),(255,255,255),2)
+        cv2.line(img,bot,target,(255,255,255),2)
+        img = cv2.circle(img, bot , 4, (255,255,255), 10)
+        img = cv2.circle(img, target , 2, (255,255,255), 2)
+        img = cv2.circle(img, (int(real[0]),int(real[1])) , 2, (255,255,255), 10)
+        #cv2.imwrite('houghlines5.jpg',skel)
+        cv2.line(img,(0,int(y*(3/4))),(x,int(y*(3/4))),(255,255,255),2)
+        scale_percent = 10 # percent of original size
+        width = int(img.shape[1] * scale_percent / 100)
+        height = int(img.shape[0] * scale_percent / 100)
+        dim = (width, height)
+
+        # resize image
+        img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+        cv2.imshow('window',img)
+        """
+
+
+    except:
+        #print("ERR IS HIMAN")
+        pass
 
     #cv2.imshow('window',skel)
